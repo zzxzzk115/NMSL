@@ -15,10 +15,9 @@ public class MPRISBackend : IPlayerBackend
     private string? _busName;
     private IDisposable? _propertyWatcher;
 
-    // Timer for incremental playback position simulation.
-    // Many MPRIS implementations do not emit position updates.
-    private System.Timers.Timer? _positionTimer;
-    private DateTime _lastRealTime;
+    // Timer for periodic polling of the current playback position.
+    // This avoids inconsistencies when the user seeks manually.
+    private System.Timers.Timer? _pollTimer;
 
     public PlayerState? GetCurrentState() => _lastState;
 
@@ -81,8 +80,8 @@ public class MPRISBackend : IPlayerBackend
 
         Console.WriteLine($"[MPRIS] Connected to {_busName}");
 
-        // Initialize simulated position tracking
-        StartPositionTimer();
+        // Start polling of the current playback position
+        StartPollingTimer();
 
         // Initial metadata/status update
         await UpdateStateAsync(null);
@@ -93,9 +92,9 @@ public class MPRISBackend : IPlayerBackend
         _propertyWatcher?.Dispose();
         _propertyWatcher = null;
 
-        _positionTimer?.Stop();
-        _positionTimer?.Dispose();
-        _positionTimer = null;
+        _pollTimer?.Stop();
+        _pollTimer?.Dispose();
+        _pollTimer = null;
 
         _player = null;
         _busName = null;
@@ -109,7 +108,7 @@ public class MPRISBackend : IPlayerBackend
 
     private async void HandlePropertyChanged(PropertyChanges changes)
     {
-        // The proxy is directly bound to the Player interface, so no interface filtering is required.
+        // No interface check is required because the proxy is bound directly to Player.
         await UpdateStateAsync(changes);
     }
 
@@ -122,7 +121,6 @@ public class MPRISBackend : IPlayerBackend
         if (meta == null)
             return;
 
-        // Position retrieved once as baseline, many players do not update it dynamically
         var pos = await _player.GetPositionAsync();
         var status = await _player.GetPlaybackStatusAsync();
 
@@ -130,7 +128,7 @@ public class MPRISBackend : IPlayerBackend
         {
             Title = meta.Title,
             Album = meta.Album,
-            Position = TimeSpan.FromMicroseconds(pos),
+            Position = TimeSpan.FromMicroseconds(pos), // always current real position
             Playing = status == "Playing",
             SourceApp = _busName ?? "Unknown"
         };
@@ -143,9 +141,6 @@ public class MPRISBackend : IPlayerBackend
 
         if (meta.Length.HasValue)
             newState.Duration = meta.Length.Value;
-
-        // Reset reference timestamp for simulated position advancement
-        _lastRealTime = DateTime.UtcNow;
 
         if (!StatesEqual(_lastState, newState))
         {
@@ -170,40 +165,35 @@ public class MPRISBackend : IPlayerBackend
                a.Duration == b.Duration &&
                a.Playing == b.Playing &&
                a.SourceApp == b.SourceApp;
-        // Position is excluded because it is updated continuously by simulation.
     }
 
     // ---------------------------------------------------------
-    // Simulated position incrementation
-    // Required because most MPRIS implementations do not emit position updates.
+    // Polling-based position update
+    // This retrieves the real position every interval, ensuring
+    // correct behavior when the user seeks manually.
     // ---------------------------------------------------------
-    private void StartPositionTimer()
+    private void StartPollingTimer()
     {
-        _positionTimer = new System.Timers.Timer(200); // 200ms interval
-        _positionTimer.AutoReset = true;
+        _pollTimer = new System.Timers.Timer(200); // 200ms interval
+        _pollTimer.AutoReset = true;
 
-        _positionTimer.Elapsed += (_, _) =>
+        _pollTimer.Elapsed += async (_, _) =>
         {
             var state = _lastState;
-            if (state is null || !state.Playing)
+            if (_player == null || state == null || !state.Playing)
                 return;
 
-            var now = DateTime.UtcNow;
-            var delta = now - _lastRealTime;
-            _lastRealTime = now;
+            var newPos = await _player.GetPositionAsync();
+            var posTs = TimeSpan.FromMicroseconds(newPos);
 
-            state.Position += delta;
-
-            if (state.Duration > TimeSpan.Zero &&
-                state.Position > state.Duration)
+            if (posTs != state.Position)
             {
-                state.Position = state.Duration;
+                state.Position = posTs;
+                OnStateChanged?.Invoke(this, state);
             }
-
-            OnStateChanged?.Invoke(this, state);
         };
 
-        _positionTimer.Start();
+        _pollTimer.Start();
     }
 
     // ---------------------------
