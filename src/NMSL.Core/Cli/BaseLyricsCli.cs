@@ -1,38 +1,35 @@
-﻿using NMSL.Core.Lyrics.Models;
+﻿using NMSL.Core;
+using NMSL.Core.Lyrics.Models;
 
 namespace NMSL.Core.Cli;
 
 /// <summary>
 /// Base class for building a CLI lyrics display, independent of backend type.
-/// Any backend implementing IPlayerBackend can be used (SMTC, MPRIS, etc).
+/// This version is fully cross-platform and uses only Console.Clear() + WriteLine(),
+/// avoiding cursor operations that fail under Linux/WSL.
 /// </summary>
 public abstract class BaseLyricsCli
 {
-    // Global lock to prevent concurrent console writes
+    // Protects console redraw from concurrent access
     protected static readonly SemaphoreSlim ConsoleLock = new(1, 1);
 
-    // Lock to prevent concurrent song change processing
+    // Prevents concurrent song-change logic
     protected static readonly SemaphoreSlim SongChangeLock = new(1, 1);
 
     protected readonly IPlayerBackend Backend;
     protected readonly LyricsService LyricsService;
 
-    // Playback tracking
+    // Lyrics + playback tracking
     protected List<LyricsLine>? CurrentLyrics = null;
     protected string LastSongId = "";
     protected int LastCenterIndex = -999;
-
-    // Layout
-    protected const int HEADER_LINES = 3;
-    protected const int LYRICS_BUFFER = 6;
-    protected int LyricsStartLine => HEADER_LINES;
 
     protected BaseLyricsCli(IPlayerBackend backend)
     {
         Backend = backend;
         LyricsService = new LyricsService();
 
-        // Subscribe to backend events
+        // Subscribe to backend updates
         Backend.OnStateChanged += async (_, state) =>
         {
             await HandleBackendStateChangedAsync(state);
@@ -40,14 +37,14 @@ public abstract class BaseLyricsCli
     }
 
     /// <summary>
-    /// Run the CLI display loop.
+    /// Start backend + main render loop.
     /// </summary>
     public async Task RunAsync(CancellationToken token)
     {
-        // Start backend (SMTC, MPRIS, etc)
+        // Start backend (SMTC/MPRIS/etc)
         await Backend.StartAsync(token);
 
-        // Main rendering loop
+        // Main loop
         while (!token.IsCancellationRequested)
         {
             RenderLyricsFrame();
@@ -56,37 +53,35 @@ public abstract class BaseLyricsCli
     }
 
     /// <summary>
-    /// Called whenever the backend reports a state change.
-    /// Handles song switching, header updates, and lyrics loading.
+    /// Fired when backend reports playback state changed.
+    /// Handles detecting new song + loading lyrics.
     /// </summary>
     private async Task HandleBackendStateChangedAsync(PlayerState? state)
     {
         if (state is null || !state.Playing)
             return;
 
-        // Normalize title/artist to detect unique tracks
+        // Normalize identifiers for change detection
         string normTitle = (state.Title ?? "").Trim().ToLowerInvariant();
         string normArtist = (state.Artists.FirstOrDefault() ?? "").Trim().ToLowerInvariant();
         string songId = $"{normTitle}|{normArtist}";
 
         bool shouldLoadLyrics = false;
-        string artistsString = "";
+        string artistsText = "";
 
-        // -----------------------------
-        // LOCK: only detect new song, do not run I/O
-        // -----------------------------
         await SongChangeLock.WaitAsync();
         try
         {
+            // Same song? Ignore.
             if (songId == LastSongId)
                 return;
 
-            // Mark as new song
+            // Mark this as new song
             LastSongId = songId;
             LastCenterIndex = -999;
             CurrentLyrics = null;
 
-            artistsString = state.Artists.Count > 0
+            artistsText = state.Artists.Count > 0
                 ? string.Join(", ", state.Artists)
                 : "Unknown Artist";
 
@@ -100,39 +95,42 @@ public abstract class BaseLyricsCli
         if (!shouldLoadLyrics)
             return;
 
-        // Show immediate header ("Searching lyrics…")
-        await WriteHeader(
+        // Immediately show header (Searching...)
+        await RedrawScreenAsync(
             "Now Playing:",
-            $"{artistsString} - {state.Title}",
-            "Searching lyrics..."
+            $"{artistsText} - {state.Title}",
+            "Searching lyrics...",
+            null
         );
 
-        // Load lyrics via provider
+        // Load lyrics
         var parsed = await LyricsService.SearchLyricsAsync(state);
 
         if (parsed != null)
         {
             CurrentLyrics = parsed;
 
-            await WriteHeader(
+            await RedrawScreenAsync(
                 "Now Playing:",
-                $"{artistsString} - {state.Title}",
-                ""
+                $"{artistsText} - {state.Title}",
+                "",
+                null
             );
         }
         else
         {
-            await WriteHeader(
+            await RedrawScreenAsync(
                 "Now Playing:",
-                $"{artistsString} - {state.Title}",
-                "(No lyrics found)"
+                $"{artistsText} - {state.Title}",
+                "(No lyrics found)",
+                null
             );
         }
     }
 
+
     /// <summary>
-    /// Process current playback state and draw lyrics window.
-    /// Called continuously by RunAsync().
+    /// Redraw lyrics window (called frequently).
     /// </summary>
     private void RenderLyricsFrame()
     {
@@ -142,68 +140,70 @@ public abstract class BaseLyricsCli
 
         TimeSpan pos = state.Position;
 
-        // Find current lyrics line
+        // Find current lyric line
         int centerIdx = CurrentLyrics.FindLastIndex(l => l.Timestamp <= pos);
         if (centerIdx < 0 || centerIdx == LastCenterIndex)
             return;
 
         LastCenterIndex = centerIdx;
 
-        // Determine visible window
+        // Make lyrics block (fixed window: 6 lines)
+        const int BUFFER = 6;
+
         int start = Math.Max(0, centerIdx - 3);
-        int end = Math.Min(CurrentLyrics.Count - 1, start + LYRICS_BUFFER - 1);
-        start = Math.Max(0, end - (LYRICS_BUFFER - 1));
+        int end = Math.Min(CurrentLyrics.Count - 1, start + BUFFER - 1);
+        start = Math.Max(0, end - (BUFFER - 1));
 
         var lines = new List<string>();
         for (int i = start; i <= end; i++)
         {
-            string text = CurrentLyrics[i].Text;
+            var text = CurrentLyrics[i].Text;
             lines.Add(i == centerIdx ? $">> {text}" : $"   {text}");
         }
 
-        _ = WriteLyricsBlock(lines, LyricsStartLine);
+        // Redraw full screen with updated lyrics
+        var artistsText = state.Artists.Count > 0
+            ? string.Join(", ", state.Artists)
+            : "Unknown Artist";
+
+        _ = RedrawScreenAsync(
+            "Now Playing:",
+            $"{artistsText} - {state.Title}",
+            "",
+            lines
+        );
     }
 
-    // -----------------------------
-    // Console writers (thread-safe)
-    // -----------------------------
 
-    protected static async Task WriteHeader(string line1, string line2, string line3)
+    // ================================================================
+    // Console Output (Cross-platform, no cursor operations)
+    // ================================================================
+
+    /// <summary>
+    /// Fully clears screen & prints header + lyrics block.
+    /// Safe for all terminals (Windows/Linux/WSL), no cursor movement.
+    /// </summary>
+    protected static async Task RedrawScreenAsync(
+        string line1,
+        string line2,
+        string line3,
+        List<string>? lyrics)
     {
         await ConsoleLock.WaitAsync();
         try
         {
-            Console.SetCursorPosition(0, 0);
-            string[] lines = { line1, line2, line3 };
+            Console.Clear();
 
-            foreach (var line in lines)
+            Console.WriteLine(line1);
+            Console.WriteLine(line2);
+            Console.WriteLine(line3);
+            Console.WriteLine();
+
+            if (lyrics != null)
             {
-                Console.Write(new string(' ', Console.WindowWidth));
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.WriteLine(line);
+                foreach (var l in lyrics)
+                    Console.WriteLine(l);
             }
-        }
-        finally
-        {
-            ConsoleLock.Release();
-        }
-    }
-
-    protected static async Task WriteLyricsBlock(List<string> lines, int startLine)
-    {
-        await ConsoleLock.WaitAsync();
-        try
-        {
-            Console.SetCursorPosition(0, startLine);
-
-            foreach (var line in lines)
-            {
-                Console.Write(new string(' ', Console.WindowWidth));
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.WriteLine(line);
-            }
-
-            Console.SetCursorPosition(0, startLine + lines.Count);
         }
         finally
         {
