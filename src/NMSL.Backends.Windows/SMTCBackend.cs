@@ -158,53 +158,54 @@ public class SMTCBackend : IPlayerBackend
                a.SourceApp == b.SourceApp;
     }
 
-    private async Task<GlobalSystemMediaTransportControlsSession?> EnsureSessionAsync()
+    private GlobalSystemMediaTransportControlsSession? EnsureSession()
     {
         if (_currentSession?.ControlSession != null)
             return _currentSession.ControlSession;
 
         _mediaManager.ForceUpdate();
+
         return _mediaManager.GetFocusedSession()?.ControlSession;
     }
 
     public async Task PlayAsync()
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
             await s.TryPlayAsync();
     }
 
     public async Task PauseAsync()
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
             await s.TryPauseAsync();
     }
 
     public async Task TogglePlayPauseAsync()
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
             await s.TryTogglePlayPauseAsync();
     }
 
     public async Task NextAsync()
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
             await s.TrySkipNextAsync();
     }
 
     public async Task PreviousAsync()
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
             await s.TrySkipPreviousAsync();
     }
 
     public async Task SeekAsync(TimeSpan position)
     {
-        var s = await EnsureSessionAsync();
+        var s = EnsureSession();
         if (s != null)
         {
             await s.TryChangePlaybackPositionAsync((long)(ulong)position.Ticks);

@@ -3,7 +3,7 @@ using NMSL.Core.Lyrics.Models;
 
 using Lyricify.Lyrics.Helpers;
 using Lyricify.Lyrics.Models;
-using Lyricify.Lyrics.Providers.Web.Netease;
+using Lyricify.Lyrics.Providers.Web.QQMusic;
 using Lyricify.Lyrics.Searchers;
 
 public class LyricsService
@@ -21,20 +21,20 @@ public class LyricsService
                 Artists = state.Artists,
                 DurationMs = (int)state.Duration.TotalMilliseconds,
                 Title = state.Title,
-            }, Searchers.Netease, Lyricify.Lyrics.Searchers.Helpers.CompareHelper.MatchType.Medium);
+            }, Searchers.QQMusic, Lyricify.Lyrics.Searchers.Helpers.CompareHelper.MatchType.Medium);
 
             if (generalSearch == null)
                 return null;
 
-            var search = await _api.SearchNew(generalSearch.Title + " " + generalSearch.Artist);
+            var search = await _api.Search(generalSearch.Title + " " + generalSearch.Artist, Api.SearchTypeEnum.SONG_ID);
             if (search == null)
                 return null;
 
-            var lyrics = await _api.GetLyric(search.Result.Songs.First().Id);
+            var lyrics = await _api.GetLyric(search.Req_1.Data.Body.Song.List.First().Mid);
             if (lyrics == null)
                 return null;
 
-            var lyricsData = ParseHelper.ParseLyrics(lyrics.Lrc.Lyric, LyricsRawTypes.Lrc);
+            var lyricsData = ParseHelper.ParseLyrics(lyrics.Lyric, LyricsRawTypes.Lrc);
             if (lyricsData == null || lyricsData.Lines == null)
                 return null;
 

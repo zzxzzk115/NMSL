@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NMSL.Backends.Mac", "src\NM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NMSL.Cli.Windows", "src\NMSL.Cli.Windows\NMSL.Cli.Windows.csproj", "{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NMSL.Cli.Linux", "src\NMSL.Cli.Linux\NMSL.Cli.Linux.csproj", "{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,18 @@ Global
 		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x64.Build.0 = Release|Any CPU
 		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x86.ActiveCfg = Release|Any CPU
 		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x86.Build.0 = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|x64.Build.0 = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Debug|x86.Build.0 = Debug|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|x64.ActiveCfg = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|x64.Build.0 = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|x86.ActiveCfg = Release|Any CPU
+		{58FFBD94-45DB-7F1D-2E43-6F348AFBE975}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
