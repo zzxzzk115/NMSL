@@ -8,22 +8,31 @@ public class MacOSMediaControlBackend : IPlayerBackend
 {
     private PlayerState? _lastState;
     private Process? _proc;
-    private Task? _readLoop;
+    private Task? _streamLoop;
 
     public event EventHandler<PlayerState>? OnStateChanged;
 
+    // timestamp / elapsed provided by stream
     private long _lastTimestampMicros = 0;
     private long _lastElapsedMicros = 0;
     private bool _playing = false;
+
+    // timer for incremental position updates
+    private System.Timers.Timer? _posTimer;
+    private long _lastTickMicros = 0;
 
     public PlayerState? GetCurrentState() => _lastState;
 
     public Task StartAsync(CancellationToken token)
     {
         StartStreamLoop(token);
+        StartPositionTimer();
         return Task.CompletedTask;
     }
 
+    // --------------------------------------------------------------
+    // Stream loop: metadata updates (title/artist/duration/playing)
+    // --------------------------------------------------------------
     private void StartStreamLoop(CancellationToken token)
     {
         var psi = new ProcessStartInfo
@@ -41,17 +50,15 @@ public class MacOSMediaControlBackend : IPlayerBackend
         if (_proc == null)
             throw new Exception("Failed to start media-control");
 
-        _readLoop = Task.Run(async () =>
+        _streamLoop = Task.Run(async () =>
         {
             using var reader = _proc.StandardOutput;
 
             while (!reader.EndOfStream && !token.IsCancellationRequested)
             {
                 string? line = await reader.ReadLineAsync();
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                ProcessJsonLine(line);
+                if (!string.IsNullOrWhiteSpace(line))
+                    ProcessJsonLine(line);
             }
         }, token);
     }
@@ -65,7 +72,7 @@ public class MacOSMediaControlBackend : IPlayerBackend
             if (!doc.RootElement.TryGetProperty("payload", out var payload))
                 return;
 
-            // Empty diff → nothing playing
+            // empty → no active media
             if (payload.ValueKind == JsonValueKind.Object &&
                 payload.EnumerateObject().Count() == 0)
             {
@@ -74,53 +81,50 @@ public class MacOSMediaControlBackend : IPlayerBackend
                 return;
             }
 
-            // Extract values
-            string title = payload.TryGetProperty("title", out var xTitle)
-                ? xTitle.GetString() ?? ""
+            // metadata fields
+            string title = payload.TryGetProperty("title", out var jTitle)
+                ? jTitle.GetString() ?? ""
                 : _lastState?.Title ?? "";
 
-            string artist = payload.TryGetProperty("artist", out var xArtist)
-                ? xArtist.GetString() ?? ""
+            string artist = payload.TryGetProperty("artist", out var jArtist)
+                ? jArtist.GetString() ?? ""
                 : _lastState?.Artists.FirstOrDefault() ?? "";
 
-            long duration = payload.TryGetProperty("durationMicros", out var xDur)
-                ? xDur.GetInt64()
+            long durationMicros = payload.TryGetProperty("durationMicros", out var jDur)
+                ? jDur.GetInt64()
                 : (_lastState?.Duration.Ticks * 10) ?? 0;
 
-            long elapsed = payload.TryGetProperty("elapsedTimeMicros", out var xEl)
-                ? xEl.GetInt64()
+            // playback tick baseline
+            long elapsedMicros = payload.TryGetProperty("elapsedTimeMicros", out var jEl)
+                ? jEl.GetInt64()
                 : _lastElapsedMicros;
 
-            long ts = payload.TryGetProperty("timestampEpochMicros", out var xTs)
-                ? xTs.GetInt64()
+            long timestampMicros = payload.TryGetProperty("timestampEpochMicros", out var jTs)
+                ? jTs.GetInt64()
                 : _lastTimestampMicros;
 
-            bool playing = payload.TryGetProperty("playing", out var xPlay)
-                ? xPlay.GetBoolean()
+            bool playing = payload.TryGetProperty("playing", out var jPlay)
+                ? jPlay.GetBoolean()
                 : _playing;
 
-            // store for time calculation
-            _lastTimestampMicros = ts;
-            _lastElapsedMicros = elapsed;
+            // update baseline for timer
+            _lastTimestampMicros = timestampMicros;
+            _lastElapsedMicros = elapsedMicros;
             _playing = playing;
+            _lastTickMicros = NowMicros();
 
-            // compute real position
-            long nowMicros = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
-            long diffMicros = nowMicros - ts;
-
-            long position = playing
-                ? elapsed + diffMicros
-                : elapsed;
+            // compute current position at packet arrival
+            long diff = NowMicros() - timestampMicros;
+            long positionMicros = playing ? elapsedMicros + diff : elapsedMicros;
 
             var newState = new PlayerState
             {
                 Title = title,
                 SourceApp = "media-control",
-                Duration = TimeSpan.FromMicroseconds(duration),
-                Position = TimeSpan.FromMicroseconds(position),
+                Duration = TimeSpan.FromMicroseconds(durationMicros),
+                Position = TimeSpan.FromMicroseconds(positionMicros),
                 Playing = playing
             };
-
             newState.Artists.Add(artist);
 
             _lastState = newState;
@@ -132,19 +136,68 @@ public class MacOSMediaControlBackend : IPlayerBackend
         }
     }
 
-    // macOS media-control supports these commands:
+    // --------------------------------------------------------------
+    // Timer: incremental position update every 200ms
+    // --------------------------------------------------------------
+    private void StartPositionTimer()
+    {
+        _posTimer = new System.Timers.Timer(200);
+        _posTimer.AutoReset = true;
+
+        _posTimer.Elapsed += (_, _) =>
+        {
+            var state = _lastState;
+            if (state == null || !state.Playing)
+                return;
+
+            long now = NowMicros();
+            long delta = now - _lastTickMicros;
+            _lastTickMicros = now;
+
+            long newPos = (long)state.Position.TotalMicroseconds + delta;
+
+            // clamp to duration
+            if (state.Duration > TimeSpan.Zero &&
+                newPos > (long)state.Duration.TotalMicroseconds)
+            {
+                newPos = (long)state.Duration.TotalMicroseconds;
+            }
+
+            var updated = new PlayerState
+            {
+                Title = state.Title,
+                Duration = state.Duration,
+                Playing = state.Playing,
+                SourceApp = state.SourceApp,
+                Position = TimeSpan.FromMicroseconds(newPos),
+                Album = state.Album,
+                ArtworkUrl = state.ArtworkUrl
+            };
+            updated.Artists.AddRange(state.Artists);
+
+            _lastState = updated;
+            OnStateChanged?.Invoke(this, updated);
+        };
+
+        _posTimer.Start();
+    }
+
+    private static long NowMicros()
+        => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
+
+    // --------------------------------------------------------------
+    // Control commands
+    // --------------------------------------------------------------
     public Task PlayAsync() => RunCmd("play");
     public Task PauseAsync() => RunCmd("pause");
     public Task TogglePlayPauseAsync() => RunCmd("togglePlayPause");
     public Task NextAsync() => RunCmd("next");
     public Task PreviousAsync() => RunCmd("previous");
-
-    public Task SeekAsync(TimeSpan position)
-        => RunCmd($"seek {position.TotalSeconds}");
+    public Task SeekAsync(TimeSpan p) => RunCmd($"seek {p.TotalSeconds}");
 
     private Task RunCmd(string arg)
     {
-        var psi = new ProcessStartInfo
+        Process.Start(new ProcessStartInfo
         {
             FileName = "media-control",
             Arguments = arg,
@@ -152,9 +205,8 @@ public class MacOSMediaControlBackend : IPlayerBackend
             RedirectStandardError = false,
             UseShellExecute = false,
             CreateNoWindow = true
-        };
+        });
 
-        Process.Start(psi);
         return Task.CompletedTask;
     }
 }
