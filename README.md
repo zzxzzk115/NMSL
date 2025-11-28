@@ -1,6 +1,6 @@
-# NMSL
+# OmniLyrics
 
-No More Searching Lyrics. A personal attempt to build the lyric tool I always wanted -- CLI, TUI, GUI, and cross-platform.
+OmniLyrics: A personal attempt to build the lyric tool I always wanted -- CLI, TUI, GUI, and cross-platform.
 
 ## Showcase
 
@@ -22,31 +22,34 @@ Install .NET 8.0
 
 Clone:
 ```bash
-git clone https://github.com/zzxzzk115/NMSL.git
+git clone https://github.com/zzxzzk115/OmniLyrics.git
 ```
 
 Build and Run:
 ```bash
-cd NMSL
+cd OmniLyrics
 dotnet build
 
 # Run Windows CLI
-dotnet run --project src/NMSL.Cli.Windows
+dotnet run --project src/OmniLyrics.Cli.Windows
 
 # Run Linux CLI
-dotnet run --project src/NMSL.Cli.Linux
+dotnet run --project src/OmniLyrics.Cli.Linux
+
+# Run macOS CLI
+dotnet run --project src/OmniLyrics.Cli.Mac
 
 # Run Linux CLI in line mode for waybar
-dotnet run --project src/NMSL.Cli.Linux --mode line
+dotnet run --project src/OmniLyrics.Cli.Linux --mode line
 ```
 
 ### Waybar Module Config
 
 ```
-// NMSL
-"custom/NMSL": {
+// OmniLyrics
+"custom/OmniLyrics": {
   "format": "  {text}",
-  "exec": "/path/to/NMSL.Cli.Linux --mode line",
+  "exec": "/path/to/OmniLyrics.Cli.Linux --mode line",
   "return-type": "text",
   "escape": true
 },
