@@ -48,7 +48,7 @@ dotnet run --project src/OmniLyrics.Cli --mode line
 // OmniLyrics
 "custom/OmniLyrics": {
   "format": "  {text}",
-  "exec": "/path/to/OmniLyrics.Cli.Linux --mode line",
+  "exec": "/path/to/OmniLyrics.Cli --mode line",
   "return-type": "text",
   "escape": true
 },
@@ -57,6 +57,8 @@ dotnet run --project src/OmniLyrics.Cli --mode line
 ## Cider V3 Settings
 
 Settings -> Connectivity -> Manage External Application Access to Cider -> Disable "Require API Tokens"
+
+![Cider V3 Settings](./media/images/ciderv3_settings.png)
 
 > Currently, we don't have custom token support.
 
@@ -67,9 +69,10 @@ Common Backends:
 - [x] media-control for macOS
 
 Software-specific Backends:
-- [x] Cider v3 (Commercial Version)
-- [ ] Cider v2 (Open Source Version)
-- [ ] YesPlayMusic
+- [x] [Cider v3](https://cider.sh/) (Current Commercial Version)
+- [ ] [Cider v2](https://v2.cider.sh/) (Previous Commercial Version)
+- [ ] [Cider v1](https://github.com/ciderapp/Cider) (Open Source Version)
+- [x] [YesPlayMusic](https://github.com/qier222/YesPlayMusic)
 
 CLI:
 - [x] Multiple Line Mode (Default)
