@@ -117,35 +117,42 @@ public class MPRISBackend : IPlayerBackend
         if (_player == null)
             return;
 
-        var meta = await _player.GetMetadataAsync();
-        if (meta == null)
-            return;
-
-        var pos = await _player.GetPositionAsync();
-        var status = await _player.GetPlaybackStatusAsync();
-
-        var newState = new PlayerState
+        try
         {
-            Title = meta.Title,
-            Album = meta.Album,
-            Position = TimeSpan.FromMicroseconds(pos), // always current real position
-            Playing = status == "Playing",
-            SourceApp = _busName ?? "Unknown"
-        };
+            var meta = await _player.GetMetadataAsync();
+            if (meta == null)
+                return;
 
-        if (meta.Artists != null)
-            newState.Artists.AddRange(meta.Artists);
+            var pos = await _player.GetPositionAsync();
+            var status = await _player.GetPlaybackStatusAsync();
 
-        if (meta.ArtUrl != null)
-            newState.ArtworkUrl = meta.ArtUrl.ToString();
+            var newState = new PlayerState
+            {
+                Title = meta.Title,
+                Album = meta.Album,
+                Position = TimeSpan.FromMicroseconds(pos), // always current real position
+                Playing = status == "Playing",
+                SourceApp = _busName ?? "Unknown"
+            };
 
-        if (meta.Length.HasValue)
-            newState.Duration = meta.Length.Value;
+            if (meta.Artists != null)
+                newState.Artists.AddRange(meta.Artists);
 
-        if (!StatesEqual(_lastState, newState))
+            if (meta.ArtUrl != null)
+                newState.ArtworkUrl = meta.ArtUrl.ToString();
+
+            if (meta.Length.HasValue)
+                newState.Duration = meta.Length.Value;
+
+            if (!StatesEqual(_lastState, newState))
+            {
+                _lastState = newState;
+                OnStateChanged?.Invoke(this, newState);
+            }
+        }
+        catch
         {
-            _lastState = newState;
-            OnStateChanged?.Invoke(this, newState);
+            // ignored
         }
     }
 
