@@ -1,4 +1,4 @@
-﻿using OmniLyrics.Backends.Factory;
+﻿using OmniLyrics.Backends.Dynamic;
 using OmniLyrics.Core.Cli;
 
-await LyricsCliRunner.RunAsync(BackendFactory.Create(), args);
+await LyricsCliRunner.RunAsync(new DynamicBackend(), args);
