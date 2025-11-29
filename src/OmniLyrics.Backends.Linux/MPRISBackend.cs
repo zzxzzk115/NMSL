@@ -190,13 +190,20 @@ public class MPRISBackend : IPlayerBackend
             if (_player == null || state == null || !state.Playing)
                 return;
 
-            var newPos = await _player.GetPositionAsync();
-            var posTs = TimeSpan.FromMicroseconds(newPos);
-
-            if (posTs != state.Position)
+            try
             {
-                state.Position = posTs;
-                OnStateChanged?.Invoke(this, state);
+                var newPos = await _player.GetPositionAsync();
+                var posTs = TimeSpan.FromMicroseconds(newPos);
+
+                if (posTs != state.Position)
+                {
+                    state.Position = posTs;
+                    OnStateChanged?.Invoke(this, state);
+                }
+            }
+            catch
+            {
+                // ignored
             }
         };
 
