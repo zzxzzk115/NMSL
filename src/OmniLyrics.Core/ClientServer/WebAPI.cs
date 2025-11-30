@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Text.Json.Serialization;
 using OmniLyrics.Core;
 
 namespace OmniLyrics.Web;
@@ -70,5 +71,6 @@ builder.Logging.AddFilter("System", LogLevel.Warning);
 
 public class SeekRequest
 {
+    [JsonPropertyName("position")]
     public double Position { get; set; }
 }
