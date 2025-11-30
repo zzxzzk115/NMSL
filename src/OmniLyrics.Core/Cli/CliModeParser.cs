@@ -39,7 +39,7 @@
                 // seek seconds
                 if (opts.Control == ControlAction.Seek)
                 {
-                    if (float.TryParse(arg, out float sec))
+                    if (double.TryParse(arg, out double sec))
                         opts.SeekPositionSeconds = sec;
                     continue;
                 }
@@ -81,5 +81,5 @@ public sealed class CliOptions
 
     public ControlAction Control { get; set; } = ControlAction.None;
 
-    public float? SeekPositionSeconds { get; set; }
+    public double? SeekPositionSeconds { get; set; }
 }

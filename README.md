@@ -29,17 +29,35 @@ Build and Run:
 ```bash
 cd OmniLyrics
 
-# Build
+# Build the entire solution
 dotnet build
 
-# Run Windows-only CLI
+# Launch the Windows CLI
 dotnet run --project src/OmniLyrics.Cli.Windows
 
-# Run Non-Windows CLI
+# Launch the Non-Windows CLI
 dotnet run --project src/OmniLyrics.Cli
 
-# Run Non-Windows CLI in Single Line mode (can be used for status bars)
+# Non-Windows CLI in single-line output mode
+# (Suitable for status bars)
 dotnet run --project src/OmniLyrics.Cli --mode line
+
+# -------------------------------------------------------------------
+# Remote control commands
+# These commands require an Omnilyrics instance running in lyrics/daemon mode.
+# -------------------------------------------------------------------
+
+# Playback control
+dotnet run --project src/OmniLyrics.Cli --control play
+dotnet run --project src/OmniLyrics.Cli --control pause
+dotnet run --project src/OmniLyrics.Cli --control toggle
+
+# Track navigation
+dotnet run --project src/OmniLyrics.Cli --control prev
+dotnet run --project src/OmniLyrics.Cli --control next
+
+# Seek to a position (in seconds)
+dotnet run --project src/OmniLyrics.Cli --control seek 10
 ```
 
 ### Waybar Module Config

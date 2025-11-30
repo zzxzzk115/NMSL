@@ -7,70 +7,50 @@ public static class LyricsCliRunner
     {
         var opt = CliParser.Parse(args);
 
+        // Control mode -> send UDP command (do NOT initialize backends)
         if (opt.Control != ControlAction.None)
         {
-            var cts = new CancellationTokenSource();
-            await backend.StartAsync(cts.Token);
-
-            await WaitBackendReadyAsync(backend);
-
-            await ExecuteControlCommand(backend, opt);
+            await ControlSender.SendAsync(opt.ToCommandString());
             return;
         }
 
-        BaseLyricsCli cli = CliFactory.Create(opt.Mode, backend);
-
-        var loopCts = new CancellationTokenSource();
+        // Normal Lyrics mode -> start backend + command server
+        var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (s, e) =>
         {
             e.Cancel = true;
-            loopCts.Cancel();
+            cts.Cancel();
         };
 
-        await backend.StartAsync(loopCts.Token);
-        await cli.RunAsync(loopCts.Token);
+        // Start backend normally
+        await backend.StartAsync(cts.Token);
+
+        // Start UDP control server
+        var server = new CommandServer(backend);
+        _ = server.StartAsync(cts.Token);
+
+        // Start lyrics UI
+        BaseLyricsCli cli = CliFactory.Create(opt.Mode, backend);
+        await cli.RunAsync(cts.Token);
     }
+}
 
-    private static async Task WaitBackendReadyAsync(IPlayerBackend backend)
+public static class ControlExtensions
+{
+    public static string ToCommandString(this CliOptions opt)
     {
-        for (int i = 0; i < 20; i++)
+        return opt.Control switch
         {
-            var state = backend.GetCurrentState();
-            if (state != null)
-                return;
-
-            await Task.Delay(100);
-        }
-    }
-
-    private static async Task ExecuteControlCommand(IPlayerBackend backend, CliOptions opt)
-    {
-        switch (opt.Control)
-        {
-            case ControlAction.Play:
-                await backend.PlayAsync();
-                break;
-
-            case ControlAction.Pause:
-                await backend.PauseAsync();
-                break;
-
-            case ControlAction.Toggle:
-                await backend.TogglePlayPauseAsync();
-                break;
-
-            case ControlAction.Next:
-                await backend.NextAsync();
-                break;
-
-            case ControlAction.Prev:
-                await backend.PreviousAsync();
-                break;
-
-            case ControlAction.Seek:
-                if (opt.SeekPositionSeconds.HasValue)
-                    await backend.SeekAsync(TimeSpan.FromSeconds(opt.SeekPositionSeconds.Value));
-                break;
-        }
+            ControlAction.Play => "play",
+            ControlAction.Pause => "pause",
+            ControlAction.Toggle => "toggle",
+            ControlAction.Next => "next",
+            ControlAction.Prev => "prev",
+            ControlAction.Seek =>
+                opt.SeekPositionSeconds.HasValue
+                    ? $"seek {opt.SeekPositionSeconds.Value}"
+                    : "seek 0",
+            _ => ""
+        };
     }
 }
