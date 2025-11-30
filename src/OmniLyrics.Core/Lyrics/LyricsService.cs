@@ -21,7 +21,7 @@ public class LyricsService
         {
             // Try get lyrics from YesPlayMusic first
             var app = state.SourceApp ?? "";
-            if (app.StartsWith("YesPlayMusic"))
+            if (app.Contains("yesplaymusic", StringComparison.OrdinalIgnoreCase))
             {
                 var embedLyrics = await _yesPlayMusicsLyricsApi.TryGetLyricsAsync();
                 if (embedLyrics != null)

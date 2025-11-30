@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using OmniLyrics.Core;
+using OmniLyrics.Core.Helpers;
 using Tmds.DBus;
 
 namespace OmniLyrics.Backends.Linux;
@@ -14,6 +15,8 @@ public class MPRISBackend : BasePlayerBackend
     private Player? _player;
     private string? _busName;
     private IDisposable? _propertyWatcher;
+
+    private YesPlayMusicApi _yesPlayMusicApi = new();
 
     // Timer for periodic polling of the current playback position.
     // This avoids inconsistencies when the user seeks manually.
@@ -143,6 +146,23 @@ public class MPRISBackend : BasePlayerBackend
 
             if (meta.Length.HasValue)
                 newState.Duration = meta.Length.Value;
+
+            // Override position with YesPlayMusic
+            if (newState.SourceApp.Contains("yesplaymusic", StringComparison.OrdinalIgnoreCase))
+            {
+                var ypState = await _yesPlayMusicApi.GetStateAsync();
+                if (ypState != null)
+                {
+                    // When YesPlayMusic skipped some songs...
+                    if (ypState.Title != meta.Title)
+                    {
+                        newState = ypState.DeepCopy();
+                    }
+
+                    // Override position anyway
+                    newState.Position = ypState.Position;
+                }
+            }
 
             if (!StatesEqual(_lastState, newState))
             {
