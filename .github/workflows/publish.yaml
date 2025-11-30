@@ -1,0 +1,48 @@
+name: Build OmniLyrics CLI
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }} (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            project: src/OmniLyrics.Cli.Windows/OmniLyrics.Cli.Windows.csproj
+
+          - os: ubuntu-latest
+            rid: linux-x64
+            project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
+
+          - os: macos-latest
+            rid: osx-x64
+            project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore ${{ matrix.project }}
+
+      - name: Publish (Self-contained single file, no pdb)
+        run: |
+          dotnet publish ${{ matrix.project }} -c Release -r ${{ matrix.rid }} -o publish/${{ matrix.rid }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnilyrics-cli-${{ matrix.rid }}
+          path: publish/${{ matrix.rid }}

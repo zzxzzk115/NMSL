@@ -7,7 +7,9 @@
         <OutputType>Exe</OutputType>
 		<PublishSingleFile>true</PublishSingleFile>
 		<SelfContained>true</SelfContained>
-        <EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<DebugType>None</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
 
 	<ItemGroup>
