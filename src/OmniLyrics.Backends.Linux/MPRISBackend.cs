@@ -5,6 +5,16 @@ using Tmds.DBus;
 
 namespace OmniLyrics.Backends.Linux;
 
+internal static class MPRISStrings
+{
+    public const string MprisPrefix = "org.mpris.MediaPlayer2.";
+    public const string DBusName = "org.freedesktop.DBus";
+    public const string DBusPath = "/org/freedesktop/DBus";
+    public const string MediaPlayerPath = "/org/mpris/MediaPlayer2";
+    public const string YesPlayMusic = "yesplaymusic";
+    public const string Cider = "cider";
+}
+
 /// <summary>
 /// MPIRS (D-Bus) Backend, only works on Linux
 /// </summary>
@@ -29,7 +39,7 @@ public class MPRISBackend : BasePlayerBackend
         var bus = Connection.Session;
 
         // Watch DBus name changes to detect player appear/disappear
-        var dbus = bus.CreateProxy<IDBus>("org.freedesktop.DBus", "/org/freedesktop/DBus");
+        var dbus = bus.CreateProxy<IDBus>(MPRISStrings.DBusName, MPRISStrings.DBusPath);
 
         await dbus.WatchNameOwnerChangedAsync(args =>
         {
@@ -37,34 +47,85 @@ public class MPRISBackend : BasePlayerBackend
             var oldOwner = args.oldOwner;
             var newOwner = args.newOwner;
 
-            if (!name.StartsWith("org.mpris.MediaPlayer2."))
+            if (!name.StartsWith(MPRISStrings.MprisPrefix))
+                return;
+
+            // Skip Cider always
+            if (name.Contains(MPRISStrings.Cider, StringComparison.OrdinalIgnoreCase))
                 return;
 
             if (!string.IsNullOrEmpty(newOwner) && string.IsNullOrEmpty(oldOwner))
             {
                 Debug.WriteLine($"Player appeared: {name}");
-                _ = ConnectToPlayerAsync(name, cancellationToken);
+                _ = ChooseBestPlayerAsync(cancellationToken);
             }
 
             if (!string.IsNullOrEmpty(oldOwner) && string.IsNullOrEmpty(newOwner))
             {
                 Debug.WriteLine($"Player disappeared: {name}");
-                if (_busName == name)
-                    DisconnectPlayer();
+                _ = ChooseBestPlayerAsync(cancellationToken);
             }
         });
 
         // Try connect immediately if already running
+        await ChooseBestPlayerAsync(cancellationToken);
+    }
+
+    // Pick the best MPRIS player when multiple exist
+    private async Task ChooseBestPlayerAsync(CancellationToken token)
+    {
+        var bus = Connection.Session;
         var services = await bus.ListServicesAsync();
-        var existing = services.FirstOrDefault(n => n.StartsWith("org.mpris.MediaPlayer2."));
-        if (existing != null)
+
+        var players = services
+            .Where(s => s.StartsWith(MPRISStrings.MprisPrefix)
+                     && !s.Contains(MPRISStrings.Cider, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (players.Count == 0)
         {
-            await ConnectToPlayerAsync(existing, cancellationToken);
+            DisconnectPlayer();
+            return;
         }
+
+        // 1. Prefer YesPlayMusic
+        var ypm = players.FirstOrDefault(p => p.Contains(MPRISStrings.YesPlayMusic, StringComparison.OrdinalIgnoreCase));
+        if (ypm != null)
+        {
+            await ConnectToPlayerAsync(ypm, token);
+            return;
+        }
+
+        // 2. Prefer the one that is playing
+        foreach (var p in players)
+        {
+            try
+            {
+                var playerProxy = bus.CreateProxy<IPlayer>(p, MPRISStrings.MediaPlayerPath);
+                var player = new Player(p, playerProxy);
+                var status = await player.GetPlaybackStatusAsync();
+                if (status == "Playing")
+                {
+                    await ConnectToPlayerAsync(p, token);
+                    return;
+                }
+            }
+            catch { }
+        }
+
+        // 3. Fallback: pick first
+        await ConnectToPlayerAsync(players[0], token);
     }
 
     private async Task ConnectToPlayerAsync(string busName, CancellationToken cancellationToken)
     {
+        // Skip Cider (handled by Cider backend)
+        if (busName.Contains(MPRISStrings.Cider, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.WriteLine($"[MPRIS] Skipped Cider: {busName}");
+            return;
+        }
+
         var bus = Connection.Session;
 
         // Cleanup previous connection
@@ -73,7 +134,7 @@ public class MPRISBackend : BasePlayerBackend
         _busName = busName;
 
         // Create proxy
-        var playerProxy = bus.CreateProxy<IPlayer>(_busName, "/org/mpris/MediaPlayer2");
+        var playerProxy = bus.CreateProxy<IPlayer>(_busName, MPRISStrings.MediaPlayerPath);
 
         // Player wrapper instance
         _player = new Player(_busName, playerProxy);
@@ -198,10 +259,9 @@ public class MPRISBackend : BasePlayerBackend
                 var newPos = await _player.GetPositionAsync();
                 var posTs = TimeSpan.FromMicroseconds(newPos);
 
-
                 // Try override position with YesPlayMusic first
                 var app = state.SourceApp ?? "";
-                if (app.Contains("yesplaymusic", StringComparison.OrdinalIgnoreCase))
+                if (app.Contains(MPRISStrings.YesPlayMusic, StringComparison.OrdinalIgnoreCase))
                 {
                     var ypState = await _yesPlayMusicApi.GetStateAsync();
                     if (ypState != null)
@@ -214,9 +274,13 @@ public class MPRISBackend : BasePlayerBackend
 
                         // Override position anyway
                         state.Position = ypState.Position;
+                        EmitStateChanged(state);
+                        return;
                     }
                 }
-                else if (posTs != state.Position)
+
+                // Fallback: normal MPRIS pos update
+                if (posTs != state.Position)
                 {
                     state.Position = posTs;
                     EmitStateChanged(state);
