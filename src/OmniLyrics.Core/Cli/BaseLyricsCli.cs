@@ -8,7 +8,7 @@ namespace OmniLyrics.Core.Cli;
 /// This version is fully cross-platform and uses only Console.Clear() + WriteLine(),
 /// avoiding cursor operations that fail under Linux/WSL.
 /// </summary>
-public abstract class BaseLyricsCli
+public abstract class BaseLyricsCli : ILyricsProvider
 {
     // Protects console redraw from concurrent access
     protected static readonly SemaphoreSlim ConsoleLock = new(1, 1);
@@ -26,6 +26,8 @@ public abstract class BaseLyricsCli
 
     // Added: per-app lyric cache
     protected readonly Dictionary<string, List<LyricsLine>?> LyricsCache = new();
+
+    List<LyricsLine>? ILyricsProvider.CurrentLyrics => CurrentLyrics;
 
     protected BaseLyricsCli(IPlayerBackend backend)
     {

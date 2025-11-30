@@ -1,4 +1,5 @@
 ﻿using OmniLyrics.Core;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OmniLyrics.Backends.CiderV3;
 
@@ -57,8 +58,16 @@ public class CiderV3Backend : BasePlayerBackend
         if (!string.IsNullOrEmpty(info.AlbumName))
             state.Album = info.AlbumName;
 
-        if (info.Artwork?.Url != null)
-            state.ArtworkUrl = info.Artwork.Url;
+        if (info.Artwork != null)
+        {
+            state.ArtworkWidth = info.Artwork.Width;
+            state.ArtworkHeight = info.Artwork.Height;
+
+            if (info.Artwork.Url != null)
+                state.ArtworkUrl = info.Artwork.Url
+                    .Replace("{w}", info.Artwork.Width.ToString())
+                    .Replace("{h}", info.Artwork.Height.ToString());
+        }
 
         var rawIsPlaying = await _api.TryGetIsPlayingAsync();
 

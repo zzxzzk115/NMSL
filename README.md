@@ -62,7 +62,7 @@ dotnet run --project src/OmniLyrics.Cli --control seek 10
 
 ### Waybar Module Config
 
-```
+```json
 // OmniLyrics
 "custom/OmniLyrics": {
   "format": "  {text}",
@@ -71,6 +71,88 @@ dotnet run --project src/OmniLyrics.Cli --control seek 10
   "escape": true
 },
 ```
+
+---
+
+## Web API Endpoints
+
+When OmniLyrics is running in **lyrics mode**, an optional lightweight HTTP server can be enabled  
+(typically on `http://127.0.0.1:27270`).  
+This allows external apps, widgets, or scripts to fetch lyrics or control playback.
+
+### Lyrics API
+
+#### **GET /lyrics**
+
+Returns the current track's parsed LRC lyrics as JSON.
+
+**Response**
+```json
+[
+  { "timestamp": "00:12.45", "text": "We're no strangers to love" },
+  { "timestamp": "00:16.80", "text": "You know the rules and so do I" }
+]
+```
+
+If no lyrics are available:
+```json
+null
+```
+
+---
+
+### Playback Control API
+
+All control endpoints return `200 OK` on success.
+
+#### **POST /playback/play**
+Starts playback.
+
+#### **POST /playback/pause**
+Pauses playback.
+
+#### **POST /playback/toggle**
+Toggles play/pause.
+
+#### **POST /playback/next**
+Skips to the next track.
+
+#### **POST /playback/prev**
+Skips to the previous track.
+
+#### **POST /playback/seek**
+Seek to a given position.
+
+**Body:**
+```json
+{ "position": 42.5 }
+```
+(seconds)
+
+---
+
+### Metadata API
+
+#### **GET /state**
+
+Returns the current player state as JSON:
+
+```json
+{
+  "title": "Song Title",
+  "artists": ["Artist A", "Artist B"],
+  "album": "Best Album",
+  "position": 12.34,
+  "duration": 180.0,
+  "playing": true,
+  "sourceApp": "Cider",
+  "artworkUrl": "https://example.com/art.jpg",
+  "artworkWidth": 640,
+  "artworkHeight": 640,
+}
+```
+
+---
 
 ## Cider V3 Settings
 
