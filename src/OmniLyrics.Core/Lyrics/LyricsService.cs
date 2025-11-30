@@ -61,7 +61,7 @@ public class LyricsService
         }
     }
 
-    private List<LyricsLine> ParseLrc(string lrc)
+    private List<LyricsLine>? ParseLrc(string lrc)
     {
         var lyricsData = ParseHelper.ParseLyrics(lrc, LyricsRawTypes.Lrc);
         if (lyricsData == null || lyricsData.Lines == null)
