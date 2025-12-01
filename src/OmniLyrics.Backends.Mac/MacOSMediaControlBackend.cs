@@ -94,7 +94,7 @@ public class MacOSMediaControlBackend : BasePlayerBackend
 
             long durationMicros = payload.TryGetProperty("durationMicros", out var jDur)
                 ? jDur.GetInt64()
-                : (_lastState?.Duration.Ticks * 10) ?? 0;
+                : (long)(_lastState?.Duration.TotalMicroseconds ?? 0);
 
             // playback tick baseline
             long elapsedMicros = payload.TryGetProperty("elapsedTimeMicros", out var jEl)
