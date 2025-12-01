@@ -171,8 +171,10 @@ public class SMTCBackend : BasePlayerBackend
                         state = ypState.DeepCopy();
                     }
 
-                    // Override position anyway
+                    // Override position, duration, artwork anyway
                     state.Position = ypState.Position;
+                    state.Duration = ypState.Duration;
+                    state.ArtworkUrl = ypState.ArtworkUrl;
                 }
             }
 
