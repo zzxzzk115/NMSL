@@ -21,8 +21,16 @@ jobs:
             rid: linux-x64
             project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
 
+          - os: ubuntu-latest
+            rid: linux-arm64
+            project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
+
           - os: macos-latest
             rid: osx-x64
+            project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
+
+          - os: macos-latest
+            rid: osx-arm64
             project: src/OmniLyrics.Cli/OmniLyrics.Cli.csproj
 
     steps:
