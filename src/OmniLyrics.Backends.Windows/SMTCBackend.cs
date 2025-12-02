@@ -157,7 +157,7 @@ public class SMTCBackend : BasePlayerBackend
                 }
             }
 
-            if (_currentSession == null)
+            if (_currentSession == null || _currentSession.ControlSession == null)
                 return;
 
             // Skip Cider
@@ -179,6 +179,9 @@ public class SMTCBackend : BasePlayerBackend
                     return;
                 }
             }
+
+            if (_currentSession == null || _currentSession.ControlSession == null)
+                return;
 
             var control = _currentSession.ControlSession;
 
