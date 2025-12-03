@@ -1,4 +1,6 @@
-﻿using Windows.Media.Control;
+﻿using System.Security.Cryptography;
+using Windows.Media.Control;
+using Windows.Storage.Streams;
 using OmniLyrics.Core;
 using OmniLyrics.Core.Helpers;
 using SixLabors.ImageSharp;
@@ -11,6 +13,16 @@ namespace OmniLyrics.Backends.Windows;
 /// </summary>
 public class SMTCBackend : BasePlayerBackend, IDisposable
 {
+    private static readonly string ArtworkCacheDir =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "OmniLyrics", "artwork");
+
+    /// <summary>
+    ///     Stores SMTC thumbnail into the local artwork cache directory.
+    ///     File naming is hash-based; thread-safe and duplicate-safe.
+    /// </summary>
+    private static readonly SemaphoreSlim ArtworkWriteLock = new(1, 1);
+
     private readonly MediaManager _mediaManager = new();
 
     private readonly YesPlayMusicApi _yesPlayMusicApi = new();
@@ -265,12 +277,17 @@ public class SMTCBackend : BasePlayerBackend, IDisposable
             var thumb = media.Thumbnail;
             if (thumb != null)
             {
-                using var ras = await thumb.OpenReadAsync();
-                using var stream = ras.AsStreamForRead();
-                using var img = Image.Load(stream);
+                string? path = await SaveThumbnailAsync(thumb);
+                if (path != null)
+                {
+                    // file:// URL used by GUI/Web API consumers
+                    state.ArtworkUrl = $"file:///{path.Replace("\\", "/")}";
 
-                state.ArtworkWidth = img.Width;
-                state.ArtworkHeight = img.Height;
+                    // Dimension extraction for rendering and metadata
+                    using var img = Image.Load(path);
+                    state.ArtworkWidth = img.Width;
+                    state.ArtworkHeight = img.Height;
+                }
             }
 
             // Seek detection: if SMTC jumps significantly
@@ -372,6 +389,56 @@ public class SMTCBackend : BasePlayerBackend, IDisposable
         if (s != null)
         {
             await s.TryChangePlaybackPositionAsync(position.Ticks);
+        }
+    }
+
+    private async Task<string?> SaveThumbnailAsync(IRandomAccessStreamReference? thumb)
+    {
+        if (thumb == null)
+            return null;
+
+        try
+        {
+            Directory.CreateDirectory(ArtworkCacheDir);
+
+            using var ras = await thumb.OpenReadAsync();
+            using var stream = ras.AsStreamForRead();
+
+            // Load once to detect image type and ensure format compatibility.
+            using var img = Image.Load(stream);
+
+            // Generate deterministic hash for file naming.
+            stream.Position = 0;
+            string hash = Convert.ToHexString(SHA256.HashData(stream));
+
+            string filePath = Path.Combine(ArtworkCacheDir, $"{hash}.jpg");
+
+            // If file already exists, skip writing.
+            if (File.Exists(filePath))
+                return filePath;
+
+            // Thread-safe file write section.
+            await ArtworkWriteLock.WaitAsync();
+            try
+            {
+                // Double-check inside lock to avoid race condition.
+                if (!File.Exists(filePath))
+                {
+                    stream.Position = 0;
+                    using var fs = File.Create(filePath);
+                    img.SaveAsJpeg(fs);
+                }
+            }
+            finally
+            {
+                ArtworkWriteLock.Release();
+            }
+
+            return filePath;
+        }
+        catch
+        {
+            return null;
         }
     }
 }
