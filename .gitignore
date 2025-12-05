@@ -16,3 +16,7 @@ launchSettings.json
 
 # Rider
 .idea/
+
+# Publish
+publish/
+Output/
