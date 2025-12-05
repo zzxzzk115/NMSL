@@ -131,9 +131,7 @@ public class LyricsViewModel : INotifyPropertyChanged
         }
     }
 
-    public string DisplayTitle => $"{Title} - {Artist} - {Album}";
-
-    public string DefaultTitle => $"{Title} - {Artist}";
+    public string DisplayTitle => $"{Title} - {Artist}";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -159,7 +157,7 @@ public class LyricsViewModel : INotifyPropertyChanged
             UpdateLines();
             UpdateCurrentByTime();
 
-            _defaultLyricsLine = new LyricsLine(TimeSpan.Zero, DefaultTitle, null);
+            _defaultLyricsLine = new LyricsLine(TimeSpan.Zero, DisplayTitle, null);
         });
     }
 

@@ -29,7 +29,6 @@
 
     <Border x:Name="RootBorder"
             Background="Transparent"
-            CornerRadius="14"
             Padding="10"
             PointerEntered="RootBorder_OnPointerEntered"
             PointerExited="RootBorder_OnPointerExited">
@@ -112,7 +111,7 @@
                 <!-- Primary lyric line -->
                 <TextBlock x:Name="PrimaryLyric"
                            Text="{Binding CurrentLine.Text}"
-                           FontSize="32"
+                           FontSize="28"
                            FontWeight="Bold"
                            Foreground="#FFF9E9C8"
                            HorizontalAlignment="Center"
@@ -129,7 +128,7 @@
                 <!-- Secondary lyric line -->
                 <TextBlock x:Name="SecondLyric"
                            Text="{Binding SecondaryLine.Text}"
-                           FontSize="24"
+                           FontSize="20"
                            Foreground="#DDDDDDDD"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center">
