@@ -36,13 +36,13 @@ cd OmniLyrics
 # Build the entire solution
 dotnet build
 
-# Launch the Windows CLI
-dotnet run --project src/OmniLyrics.Cli.Windows
+# Launch the GUI
+dotnet run --project src/OmniLyrics.Gui
 
-# Launch the Non-Windows CLI
+# Launch the CLI
 dotnet run --project src/OmniLyrics.Cli
 
-# Non-Windows CLI in single-line output mode
+# Launch the CLI in single-line output mode
 # (Suitable for status bars)
 dotnet run --project src/OmniLyrics.Cli --mode line
 
