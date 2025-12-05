@@ -11,15 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Backends.Linux",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Backends.Mac", "src\OmniLyrics.Backends.Mac\OmniLyrics.Backends.Mac.csproj", "{A80F3EF4-FBDD-4970-AEFE-FC3A94DE1E0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Cli.Windows", "src\OmniLyrics.Cli.Windows\OmniLyrics.Cli.Windows.csproj", "{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Backends.CiderV3", "src\OmniLyrics.Backends.CiderV3\OmniLyrics.Backends.CiderV3.csproj", "{2A9CC213-82FA-4766-9EE1-02C490E62537}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Cli", "src\OmniLyrics.Cli\OmniLyrics.Cli.csproj", "{07063143-0476-4A21-B8A1-39A185F6B16F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.BackendFactory", "src\OmniLyrics.BackendFactory\OmniLyrics.BackendFactory.csproj", "{FADEF858-D605-4DCB-B075-48E09AEF82F2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.BackendFactory.Windows", "src\OmniLyrics.BackendFactory.Windows\OmniLyrics.BackendFactory.Windows.csproj", "{62E6B74D-128F-4A9A-8391-3709B9612BC8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OmniLyrics.Gui", "src\OmniLyrics.Gui\OmniLyrics.Gui.csproj", "{82B0149C-4F7C-46FB-A711-42E81D3AA5DA}"
 EndProject
@@ -81,18 +77,6 @@ Global
 		{A80F3EF4-FBDD-4970-AEFE-FC3A94DE1E0B}.Release|x64.Build.0 = Release|Any CPU
 		{A80F3EF4-FBDD-4970-AEFE-FC3A94DE1E0B}.Release|x86.ActiveCfg = Release|Any CPU
 		{A80F3EF4-FBDD-4970-AEFE-FC3A94DE1E0B}.Release|x86.Build.0 = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|x64.Build.0 = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Debug|x86.Build.0 = Debug|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x64.ActiveCfg = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x64.Build.0 = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x86.ActiveCfg = Release|Any CPU
-		{5D1EA272-3B75-1D26-EE30-AB3BC5C2ECBC}.Release|x86.Build.0 = Release|Any CPU
 		{2A9CC213-82FA-4766-9EE1-02C490E62537}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2A9CC213-82FA-4766-9EE1-02C490E62537}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A9CC213-82FA-4766-9EE1-02C490E62537}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -129,18 +113,6 @@ Global
 		{FADEF858-D605-4DCB-B075-48E09AEF82F2}.Release|x64.Build.0 = Release|Any CPU
 		{FADEF858-D605-4DCB-B075-48E09AEF82F2}.Release|x86.ActiveCfg = Release|Any CPU
 		{FADEF858-D605-4DCB-B075-48E09AEF82F2}.Release|x86.Build.0 = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|x64.Build.0 = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Debug|x86.Build.0 = Debug|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|x64.ActiveCfg = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|x64.Build.0 = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|x86.ActiveCfg = Release|Any CPU
-		{62E6B74D-128F-4A9A-8391-3709B9612BC8}.Release|x86.Build.0 = Release|Any CPU
 		{82B0149C-4F7C-46FB-A711-42E81D3AA5DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{82B0149C-4F7C-46FB-A711-42E81D3AA5DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82B0149C-4F7C-46FB-A711-42E81D3AA5DA}.Debug|x64.ActiveCfg = Debug|Any CPU
