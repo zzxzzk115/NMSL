@@ -4,6 +4,11 @@
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <SelfContained>true</SelfContained>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+        <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 
     <ItemGroup>
