@@ -2,6 +2,18 @@
     <PropertyGroup>
         <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/obj/$(RuntimeIdentifier)/</BaseIntermediateOutputPath>
         <BaseOutputPath>$(MSBuildProjectDirectory)/bin/$(RuntimeIdentifier)/</BaseOutputPath>
+        <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+        <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsWindows)'=='true'">
+        <DefineConstants>Windows</DefineConstants>
+        <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsWindows)'=='false'">
+        <DefineConstants>NoWindows</DefineConstants>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">

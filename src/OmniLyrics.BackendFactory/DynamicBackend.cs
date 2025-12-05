@@ -2,6 +2,9 @@
 using OmniLyrics.Backends.Linux;
 using OmniLyrics.Backends.Mac;
 using OmniLyrics.Core;
+#if Windows
+using OmniLyrics.Backends.Windows;
+#endif
 
 namespace OmniLyrics.Backends.Dynamic;
 
@@ -15,6 +18,11 @@ public class DynamicBackend : BasePlayerBackend, IDisposable
     public DynamicBackend()
     {
         _backends = new Dictionary<string, IPlayerBackend>();
+
+#if Windows
+        if (OperatingSystem.IsWindows())
+            _backends["SMTC"] = new SMTCBackend();
+#endif
 
         if (OperatingSystem.IsLinux())
             _backends["MPRIS"] = new MPRISBackend();

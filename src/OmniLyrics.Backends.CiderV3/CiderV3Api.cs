@@ -136,7 +136,10 @@ public class CiderV3Api : IDisposable
     public Task SeekAsync(TimeSpan position)
     {
         int sec = (int)position.TotalSeconds;
-        return PostAsync("/seek", new { position = sec });
+        return PostAsync("/seek", new
+        {
+            position = sec
+        });
     }
 
     private string GetPlaybackApiEndpoint(string path) => _playbackApiPrefix + path;

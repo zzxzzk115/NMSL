@@ -17,7 +17,10 @@ public static class MyArtistHelper
         }
 
         // Default, only one artist
-        return new List<string> { artistDesc };
+        return new List<string>
+        {
+            artistDesc
+        };
     }
 
     private static List<string> SplitArtistsFromString(string separator, string artistDesc)

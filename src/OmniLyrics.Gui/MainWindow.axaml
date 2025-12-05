@@ -88,6 +88,7 @@
             <StackPanel
                 Orientation="Vertical"
                 Spacing="6"
+                Margin="0,20,0,0"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center">
                 <!-- Primary lyric line -->
